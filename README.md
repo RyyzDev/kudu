@@ -24,7 +24,7 @@ Berangkat dari rasa frustrasi tersebut, **Kudu (Kuliah Dulu)** lahir.
 Kudu dirancang sebagai "Pusat Kendali Akademik" di genggamanmu, mengatasi kerumitan sistem kampus dengan dua pilar utama:
 
 ✨ **Silent Login (Regenerasi Sesi Tanpa Henti)**
-Tidak ada lagi cerita "Logout secara otomatis". Ketika sesi login web akademik kedaluwarsa di latar belakang, Kudu akan secara otomatis dan senyap melakukan regenerasi sesi (re-login) dalam hitungan milidetik *sebelum* notifikasi error muncul di layar. Kamu bisa membuka aplikasi kapan saja dan langsung melihat datamu tanpa hambatan.
+**Cukup Sekali Login** Tidak ada lagi cerita "Logout secara otomatis". Ketika sesi login web akademik kedaluwarsa di latar belakang, Kudu akan secara otomatis dan senyap melakukan regenerasi sesi (re-login) dalam hitungan milidetik *sebelum* notifikasi error muncul di layar. Kamu bisa membuka aplikasi kapan saja dan langsung melihat datamu tanpa hambatan.
 
 🎯 **Centralized & Curated (Terpusat & Esensial)**
 Kudu menyatukan layanan akademik yang berserakan menjadi satu ekosistem yang kohesif. Kami membuang semua "fitur pajangan" yang jarang dipakai di web aslinya, dan hanya menyisakan fitur-fitur esensial yang *benar-benar* dibutuhkan oleh mahasiswa sehari-hari (seperti Jadwal, KRS, dan Nilai). Lebih cepat, lebih bersih, dan langsung pada intinya.
@@ -38,7 +38,7 @@ Saat ini, Kudu tersedia secara eksklusif untuk perangkat **Android** dalam forma
 Kamu tidak perlu melakukan *build* atau kompilasi kode sendiri untuk mencoba aplikasinya. Cukup unduh file APK terbaru yang telah di-generate oleh server Expo melalui tombol di bawah ini:
 
 <div align="center" style="margin: 20px 0;">
-  <a href="LINK_EXPO_DOWNLOAD_DISINI" target="_blank" style="text-decoration: none;">
+  <a href="https://expo.dev/accounts/ryyzdev/projects/kudu/builds/947f6bb9-e61c-40d0-b482-6a5268df212b" target="_blank" style="text-decoration: none;">
     <div style="background-color: #000000; color: #ffffff; padding: 12px 24px; border-radius: 8px; display: inline-block; font-weight: bold; font-family: sans-serif; box-shadow: 0 4px 6px rgba(0,0,0,0.1); cursor: pointer;">
       ⬇️ Download APK via Expo
     </div>
@@ -107,16 +107,14 @@ Kudu menggunakan *Native Modules* (`@react-native-cookies/cookies`). Oleh karena
 - Android Studio / Emulator Android
 - Xcode / Simulator iOS (Khusus pengguna macOS)
 
-### Langkah Instalasi
+### Langkah Instalasi Pengembangan
 ```bash
 # 1. Klon Repositori dan Install dependensi
 npm install
 
-# 2. Jalankan dan Build di Android Emulator
-npx expo run:android
+# 2. Jalankan Server Dev
+npx expo start -c
 
-# 3. Jalankan dan Build di iOS Simulator
-npx expo run:ios
 ```
 
 ---
@@ -128,4 +126,5 @@ Kudu dirancang untuk terus berkembang menyesuaikan kebutuhan mahasiswa. Berikut 
 *   **🏛️ Integrasi Web Layanan FST:** Menghubungkan portal akademik umum dengan ekosistem sistem informasi/layanan khusus Fakultas Sains dan Teknologi (FST).
 *   **📱 Implementasi Widget Android:** Pengalaman akses cepat (*at-a-glance*) melalui Home Screen HP untuk melihat jadwal kuliah hari ini tanpa perlu membuka aplikasi.
 *   **🤖 Automasi Agentic AI untuk WAR KRS:** Pemanfaatan *agentic automation* pintar untuk membantu mahasiswa dalam proses pemilihan/pengambilan mata kuliah (KRS) dengan lebih presisi, efisien, dan otomatis.
+*   **📖 Integrasi Web LMS:** Menghubungkan Web LMS yang sudah ada kedalam Ekosistem Kudu, dimana mahasiswa bisa melakukan berbagai aktivitas di LMS melalui Kudu agar produktivitas semakin meningkat. 
 *   **🚀 Dan Masih Banyak Lagi...** Penyesuaian performa, fitur *caching* offline lanjutan, serta peningkatan pengalaman pengguna (*UX*) secara berkala.
