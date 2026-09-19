@@ -1,23 +1,21 @@
 {
   "expo": {
-    "name": "kudu",
+    "name": "KUDU",
     "slug": "kudu",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/kudu-icon.jpg",
     "scheme": "kudu",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon",
-      "bundleIdentifier": "com.anonymous.kudu"
+      "icon": "./assets/images/kudu-icon.jpg",
+      "bundleIdentifier": "com.ryyzdev.kudu"
     },
     "android": {
       "minSdkVersion": 24,
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "backgroundColor": "#ffde59",
+        "foregroundImage": "./assets/images/kudu-icon.jpg"
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.ryyzdev.kudu"
@@ -25,23 +23,42 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/kudu-icon.jpg"
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 76
+          "backgroundColor": "#ffde59",
+          "image": "./assets/images/kudu-icon.jpg",
+          "imageWidth": 200
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableProguardInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true,
+            "jsEngine": "hermes"
+          },
+          "ios": {
+            "jsEngine": "hermes"
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "b0a75e80-fa9a-4614-b298-ddae65563894"
+      }
     }
   }
 }
