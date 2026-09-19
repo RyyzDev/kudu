@@ -1,4 +1,4 @@
-# Kudu - Sistem Informasi Akademik Mobile
+# Kudu - Kuliah Dulu
 
 ## 🏗️ Arsitektur Aplikasi
 Kudu adalah aplikasi *mobile* React Native yang menggunakan pendekatan **Client-Side Scraping** (memindahkan logika *Backend-For-Frontend* murni ke sisi klien). 
