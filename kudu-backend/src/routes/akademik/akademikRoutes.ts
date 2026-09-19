@@ -10,9 +10,9 @@ router.get('/krs', async (req, res) => {
   if (!phpSessId) return res.status(401).json({ success: false, message: 'Header PHPSESSID kosong.' });
 
   try {
-    const dataKRS = await getDataKRS(phpSessId, userAgent);
+    const dataKRS = await getDataKRS(phpSessId as string, userAgent);
     return res.json({ success: true, message: 'Data KRS Berhasil Diambil', data: dataKRS });
-  } catch (error) {
+  } catch (error: any) {
     console.error('[Error KRS]:', error.message);
     if (error.message === 'SESSION_EXPIRED') return res.status(401).json({ success: false, message: 'Sesi Mati.', code: 'SESSION_EXPIRED' });
     if (error.message === 'ACCESS_DENIED') return res.status(403).json({ success: false, message: 'Access Denied dari server kampus.' });

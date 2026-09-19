@@ -7,15 +7,15 @@ import updateCookies from '../../utils/cookieUtils.js';
 // AUTHENTICATION PIPELINE (LOGIN & KARANTINA)
 // ==========================================
 
-async function authenticateAcademicSystem(username, password, clientUserAgent) {
-  const userAgent = clientUserAgent || HTTP_CONFIG.DEFAULT_HEADERS['User-Agent'];
+async function authenticateAcademicSystem(username: string, password: string, clientUserAgent?: string | string[]) {
+  const userAgent = (clientUserAgent as string) || HTTP_CONFIG.DEFAULT_HEADERS['User-Agent'];
   const baseHeaders = { ...HTTP_CONFIG.DEFAULT_HEADERS, 'User-Agent': userAgent };
 
   console.log('\n[AUTH PIPELINE] Memulai otentikasi untuk:', username);
 
   // TAHAP 1: Get Metadata Login
-  const metaRes = await axios.get(process.env.AKADEMIK_ORIGIN_URL, { headers: baseHeaders });
-  let currentCookies = updateCookies('', metaRes.headers['set-cookie']);
+  const metaRes = await axios.get(process.env.AKADEMIK_ORIGIN_URL as string, { headers: baseHeaders });
+  let currentCookies = updateCookies('', metaRes.headers['set-cookie'] as string[]);
   const $meta = cheerio.load(metaRes.data);
   const formAction = $meta('#kc-form-login').attr('action');
   
@@ -40,7 +40,7 @@ async function authenticateAcademicSystem(username, password, clientUserAgent) {
   }
 
   // Update cookie dengan KEYCLOAK_SESSION dkk
-  currentCookies = updateCookies(currentCookies, loginRes.headers['set-cookie']);
+  currentCookies = updateCookies(currentCookies, loginRes.headers['set-cookie'] as string[]);
   let redirectUrl = loginRes.headers.location;
 
   // TAHAP 3: THE QUARANTINE LOOP (MANUAL REDIRECT TRACING)
@@ -59,7 +59,7 @@ async function authenticateAcademicSystem(username, password, clientUserAgent) {
     });
 
     // Tangkap Cookie PHPSESSID/Sesi baru dari server PHP
-    currentCookies = updateCookies(currentCookies, res.headers['set-cookie']);
+    currentCookies = updateCookies(currentCookies, res.headers['set-cookie'] as string[]);
 
     if (res.status === 302 || res.status === 301) {
       let nextLocation = res.headers.location;

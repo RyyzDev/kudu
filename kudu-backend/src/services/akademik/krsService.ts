@@ -6,8 +6,27 @@ import HTTP_CONFIG from '../../config/httpConfig.js';
 // ACADEMIC SCRAPING (KRS MODULE)
 // ==========================================
 
-async function getDataKRS(phpSessId, clientUserAgent) {
-  const userAgent = clientUserAgent || HTTP_CONFIG.DEFAULT_HEADERS['User-Agent'];
+interface StudentProfile {
+  nama?: string;
+  nim?: string;
+  programStudi?: string;
+  semester?: string;
+  maksimumSks?: string | number;
+  dosenPembimbing?: string;
+}
+
+interface KrsItem {
+  no: number;
+  kodeMk: string;
+  kelas: string;
+  matakuliah: string;
+  jadwalWaktu: string;
+  jadwalRuang: string;
+  sks: number;
+}
+
+async function getDataKRS(phpSessId: string, clientUserAgent?: string | string[]) {
+  const userAgent = (clientUserAgent as string) || HTTP_CONFIG.DEFAULT_HEADERS['User-Agent'];
   const cookieHeader = phpSessId.startsWith('PHPSESSID=') ? phpSessId : `PHPSESSID=${phpSessId}`;
   const baseHeaders = { ...HTTP_CONFIG.DEFAULT_HEADERS, 'User-Agent': userAgent, 'Cookie': cookieHeader };
 
@@ -24,7 +43,7 @@ async function getDataKRS(phpSessId, clientUserAgent) {
   
   $dash('a').each((_, el) => {
     if ($dash(el).text().trim().includes('Kartu Rencana Studi')) {
-      krsUrl = $dash(el).attr('href'); // Otomatis meng-unescape &amp; jadi &
+      krsUrl = $dash(el).attr('href') as string; // Otomatis meng-unescape &amp; jadi &
     }
   });
 
@@ -46,8 +65,8 @@ async function getDataKRS(phpSessId, clientUserAgent) {
 
   // LANGKAH 3: Parsing Data HTML ke JSON
   const $ = cheerio.load(html);
-  const studentProfile = {};
-  const krsList = [];
+  const studentProfile: StudentProfile = {};
+  const krsList: KrsItem[] = [];
   let totalSks = 0;
 
   $('table tr').each((_, row) => {

@@ -1,10 +1,10 @@
 /**
  * Menjaga dan memperbarui Cookie selama proses Redirect Karantina
  */
-function updateCookies(existingCookieStr = '', newSetCookieArray = []) {
+function updateCookies(existingCookieStr: string = '', newSetCookieArray: string[] = []) {
   if (!newSetCookieArray || newSetCookieArray.length === 0) return existingCookieStr;
   
-  const cookieMap = {};
+  const cookieMap: Record<string, string> = {};
   
   // Parse existing cookies
   if (existingCookieStr) {

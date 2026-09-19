@@ -16,7 +16,7 @@ router.post('/login', async (req, res) => {
       message: 'Login dan Karantina berhasil dilewati.',
       data: { sessionCookies: finalPhpSessId }
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('[Error Login]:', error.message);
     return res.status(error.message.includes('Login Gagal') ? 401 : 500).json({ success: false, message: error.message });
   }
