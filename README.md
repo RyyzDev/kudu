@@ -1,56 +1,67 @@
-# Welcome to your Expo app 👋
+# Kudu - Sistem Informasi Akademik Mobile
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+## 🏗️ Arsitektur Aplikasi
+Kudu adalah aplikasi *mobile* React Native yang menggunakan pendekatan **Client-Side Scraping** (memindahkan logika *Backend-For-Frontend* murni ke sisi klien). 
 
-## Get started
+Aplikasi ini **tidak menggunakan backend atau server perantara**. Semua request ke sistem *Single Sign-On* (SSO), manajemen sesi, hingga *parsing* data HTML (KRS, Jadwal Kuliah, dll) dilakukan secara langsung dari dalam *smartphone* pengguna (React Native ➔ Portal Akademik Kampus).
 
-1. Install dependencies
+**Keuntungan Arsitektur Ini:**
+- **Anti Blokir (Bypass Rate-Limiting):** Karena *request* dikirim dari *IP Address* seluler/WiFi pengguna masing-masing, aplikasi tidak akan terkena pemblokiran massal (IP Ban) oleh sistem *firewall* kampus.
+- **Tanpa Biaya Infrastruktur:** Bebas biaya server/hosting (Zero-Infrastructure).
+- **Keamanan Data Mutlak:** Privasi maksimal karena tidak ada server penengah yang memproses atau mengintip data pengguna.
 
-   ```bash
-   npm install
-   ```
+## 🛠️ Stack Teknologi
+- **Framework**: React Native (Expo SDK 57) + Expo Router
+- **Styling**: NativeWind (Tailwind CSS)
+- **Networking**: Axios (dengan custom Interceptors) & Native `fetch`
+- **Cookie Management**: `@react-native-cookies/cookies`
+- **Scraping Engine**: `cheerio`
+- **Data Security**: `expo-secure-store`
 
-2. Start the app
+---
 
-   ```bash
-   npx expo start
-   ```
+## 🔒 Alur Data Sensitif (NIM, Password & Sesi)
+Mengingat Kudu berinteraksi langsung dengan Portal Akademik dan SSO Kampus, aplikasi didesain dengan ketat terkait penanganan data sensitif:
 
-In the output, you'll find options to open the app in a
+1. **Login SSO & Quarantine Loop:** 
+   Saat pengguna menekan tombol login, NIM dan Password yang diketikkan akan diubah menjadi *payload* (POST request) dan dikirim **langsung** ke server `sso.uinjkt.ac.id`. Aplikasi memanfaatkan `fetch` Native dengan *redirect manual* untuk merunut alur karantina SSO yang rumit secara otomatis hingga sukses memperoleh tiket masuk (`PHPSESSID`).
+2. **Penyimpanan Kredensial On-Device:**
+   Agar fitur *Silent Login* (pemulihan sesi) bisa berjalan, NIM dan Password disimpan secara diam-diam dan aman menggunakan **`expo-secure-store`**. Teknologi ini mengenkripsi data tersebut dan menyimpannya di brankas perangkat keras (*Android Keystore* atau *iOS Keychain*).
+3. **Pemulihan Sesi (Axios Interceptors):**
+   Jika di tengah penggunaan aplikasi (misal saat membuka jadwal KRS) sesi akademik pengguna tiba-tiba mati, *Axios Interceptor* akan langsung mendeteksinya. Secara otomatis di balik layar, aplikasi mengambil kredensial dari brankas, melakukan *login* ulang, dan memuat data KRS tanpa memberikan jeda *error* kepada pengguna.
+4. **Isolasi Cookie:**
+   Semua *cookies* yang didapat dari web kampus diisolasi secara *Native* oleh OS, tidak terpapar di *Javascript global state*.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+---
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+## 🛡️ Kebijakan Privasi (Privacy Policy)
 
-## Get a fresh project
+**Privasi Anda adalah Hak Mutlak dan Prioritas Utama Kudu.**
 
-When you're ready, run:
+- **Kerahasiaan Mutlak (No Middleman):** Kudu pada dasarnya hanyalah sebuah *"Peramban Otomatis (Browser)"*. Kudu **TIDAK PERNAH** mengirimkan, menyadap, mencadangkan, atau merekam NIM, Password, maupun riwayat Akademik Anda ke server pihak ketiga mana pun milik pembuat aplikasi. Semua data Anda hanya bepergian dari HP Anda menuju Server Kampus (End-to-End).
+- **Penyimpanan Lokal:** Segala bentuk *cache* dan kredensial sepenuhnya diamankan secara lokal di dalam HP Anda. Jika Anda menekan tombol "Logout", menghapus data aplikasi, atau melakukan *Uninstall*, seluruh kredensial Anda akan musnah secara permanen dari perangkat.
+- **Open Source Transparency:** Kudu dibangun secara transparan (*open-source*), sehingga mahasiswa atau ahli IT kampus dapat melakukan audit secara mandiri pada kode jaringan aplikasi untuk memastikan tidak ada pencurian data di belakang layar.
+- **Izin Aplikasi Minimalis:** Kudu menjunjung tinggi prinsip keamanan *Zero-Trust*. Aplikasi Kudu **hanya membutuhkan izin akses INTERNET**. Kudu **tidak pernah meminta** dan tidak butuh izin untuk membaca media/file, melihat galeri, mendeteksi lokasi, atau menggunakan kamera/mikrofon Anda.
 
+---
+
+## 🚀 Panduan Pengembangan (Development)
+
+Kudu menggunakan *Native Modules* (`@react-native-cookies/cookies`). Oleh karena itu, Anda **tidak dapat** menjalankannya hanya menggunakan aplikasi "Expo Go" standar. Anda wajib mem-build klien pengembangan secara native.
+
+### Prasyarat
+- Node.js (Versi terbaru)
+- Android Studio / Emulator Android
+- Xcode / Simulator iOS (Khusus pengguna macOS)
+
+### Langkah Instalasi
 ```bash
-npm run reset-project
+# 1. Klon Repositori dan Install dependensi
+npm install
+
+# 2. Jalankan dan Build di Android Emulator
+npx expo run:android
+
+# 3. Jalankan dan Build di iOS Simulator
+npx expo run:ios
 ```
-
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-### Other setup steps
-
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.

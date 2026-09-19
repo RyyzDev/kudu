@@ -1,11 +1,12 @@
 /**
  * Menjaga dan memperbarui Cookie selama proses Redirect Karantina
+ * Identik dengan kudu-backend/src/utils/cookieUtils.ts
  */
-function updateCookies(existingCookieStr: string = '', newSetCookieArray: string[] = []) {
+export function updateCookies(existingCookieStr: string = '', newSetCookieArray: string[] = []): string {
   if (!newSetCookieArray || newSetCookieArray.length === 0) return existingCookieStr;
-  
+
   const cookieMap: Record<string, string> = {};
-  
+
   // Parse existing cookies
   if (existingCookieStr) {
     existingCookieStr.split(';').forEach(c => {
@@ -31,4 +32,17 @@ function updateCookies(existingCookieStr: string = '', newSetCookieArray: string
   return Object.entries(cookieMap).map(([k, v]) => `${k}=${v}`).join('; ');
 }
 
-export default updateCookies;
+/**
+ * Mengekstrak array Set-Cookie dari response headers Native fetch.
+ * React Native's fetch Headers tidak support getSetCookie() secara merata,
+ * sehingga kita baca manual dari header 'set-cookie'.
+ */
+export function extractSetCookies(headers: Headers): string[] {
+  if (typeof (headers as any).getSetCookie === 'function') {
+    return (headers as any).getSetCookie() as string[];
+  }
+  const raw = headers.get('set-cookie');
+  if (!raw) return [];
+  // Split by ", " yang mendahului nama cookie baru (heuristik umum)
+  return raw.split(/,(?=[^;]+=)/).map(s => s.trim());
+}
