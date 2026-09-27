@@ -1,69 +1,7 @@
 import * as cheerio from 'cheerio';
 import { HTTP_CONFIG } from './httpConfig';
 import { updateCookies, extractSetCookies } from '../../utils/cookieUtils';
-
-// Helper: log semua headers dari response fetch
-function logHeaders(label: string, headers: Headers) {
-  const entries: Record<string, string> = {};
-  headers.forEach((val, key) => { entries[key] = val; });
-  console.log(`[HEADERS] ${label}:`, JSON.stringify(entries, null, 2));
-}
-
-// Helper: HTTP GET dengan auto-redirect manual & cookie collector
-// Mereplika persis perilaku Axios Node.js (follow-redirects) + cookie jar
-async function fetchWithManualRedirects(
-  initialUrl: string,
-  baseHeaders: Record<string, string>,
-  initialCookies: string = '',
-  maxRedirects: number = 5
-) {
-  let currentUrl = initialUrl;
-  let currentCookies = initialCookies;
-  let loopCount = 0;
-  let res: Response;
-
-  while (loopCount <= maxRedirects) {
-    loopCount++;
-    console.log(`\n[FETCH-TRACE ${loopCount}] GET ${currentUrl.split('?')[0]}...`);
-    
-    res = await fetch(currentUrl, {
-      method: 'GET',
-      headers: { ...baseHeaders, 'Cookie': currentCookies },
-      redirect: 'manual' // Wajib manual untuk kumpulkan cookie
-    });
-
-    console.log(`[FETCH-TRACE ${loopCount}] Status: ${res.status}`);
-    const newCookies = extractSetCookies(res.headers);
-    currentCookies = updateCookies(currentCookies, newCookies);
-    console.log(`[FETCH-TRACE ${loopCount}] Cookies:`, currentCookies || '(kosong)');
-
-    if (res.status === 301 || res.status === 302 || res.status === 303 || res.status === 307 || res.status === 308) {
-      let location = res.headers.get('location');
-      if (!location) break;
-      
-      // Handle relative URL
-      if (!location.startsWith('http')) {
-        const urlObj = new URL(currentUrl);
-        location = `${urlObj.origin}${location.startsWith('/') ? '' : '/'}${location}`;
-      }
-      
-      // FIX NATIVE COOKIE JAR BYPASS:
-      // Jika dialihkan ke halaman otorisasi Keycloak, paksa login ulang 
-      // agar tidak otomatis masuk pakai sesi lama yang nyangkut di sistem HP.
-      if (location.includes('/protocol/openid-connect/auth') && !location.includes('prompt=login')) {
-        location += '&prompt=login';
-      }
-      
-      currentUrl = location;
-      continue;
-    }
-
-    // Jika 200 atau status lain, berhenti dan kembalikan respon
-    return { res, currentUrl, currentCookies };
-  }
-
-  throw new Error(`Terlalu banyak redirect (> ${maxRedirects})`);
-}
+import { fetchWithManualRedirects } from './fetchHelper';
 
 // ==========================================
 // AUTHENTICATION PIPELINE (LOGIN & KARANTINA)
@@ -79,22 +17,38 @@ export async function authenticateAcademicSystem(username: string, password: str
   // TAHAP 1: Get Metadata Login (Manual Redirect Follower)
   // ─────────────────────────────────────────
   console.log('[TAHAP 1] Mencari form SSO...');
-  
-  // Lakukan request ke Akademik, ikuti semua redirect sampai dapat 200 OK (SSO form)
-  const traceResult = await fetchWithManualRedirects(HTTP_CONFIG.AKADEMIK_ORIGIN_URL, baseHeaders, '');
+
+  let traceResult = await fetchWithManualRedirects(HTTP_CONFIG.AKADEMIK_ORIGIN_URL, baseHeaders, '');
   let currentCookies = traceResult.currentCookies;
   let finalUrl = traceResult.currentUrl;
-  let metaRes = traceResult.res;
 
-  const metaHtml = await metaRes.text();
-  const $meta = cheerio.load(metaHtml);
+  let metaHtml = await traceResult.res.text();
+  let $meta = cheerio.load(metaHtml);
   let formAction = $meta('#kc-form-login').attr('action');
 
-  // Fallback jika portal menggunakan meta-refresh ke SSO (jarang, tapi mungkin)
+  // Fallback A: "Access Denied Transition Window"
+  // Portal menampilkan halaman "Anda tidak diijinkan" (200 OK) selama ~3 detik
+  // saat sesi baru saja expired, sebelum server akhirnya redirect ke SSO.
+  // Solusi: tunggu 4 detik lalu fetch ulang dari awal agar server sudah redirect ke SSO.
+  if (!formAction && metaHtml.includes('Anda tidak diijinkan')) {
+    console.log('[TAHAP 1] \u26a0\ufe0f Portal masih dalam masa transisi sesi (access denied window).');
+    console.log('[TAHAP 1] Menunggu 4 detik sebelum mencoba ulang...');
+    await new Promise(resolve => setTimeout(resolve, 4000));
+
+    traceResult = await fetchWithManualRedirects(HTTP_CONFIG.AKADEMIK_ORIGIN_URL, baseHeaders, '');
+    currentCookies = traceResult.currentCookies;
+    finalUrl = traceResult.currentUrl;
+    metaHtml = await traceResult.res.text();
+    $meta = cheerio.load(metaHtml);
+    formAction = $meta('#kc-form-login').attr('action');
+    console.log('[TAHAP 1] Selesai menunggu. Mencoba ulang pencarian form SSO...');
+  }
+
+  // Fallback B: portal menggunakan meta-refresh ke SSO (jarang, tapi mungkin)
   if (!formAction) {
     const metaRefresh = $meta('meta[http-equiv="refresh"], meta[http-equiv="Refresh"]').attr('content');
     if (metaRefresh) {
-      const match = metaRefresh.match(/url\s*=\s*['"]?([^'">\s]+)/i);
+      const match = metaRefresh.match(/url\s*=\s*['"]?([^'">\/\s]+)/i);
       if (match && match[1]) {
         console.log('[TAHAP 1] Ditemukan meta-refresh, mengikuti ke:', match[1]);
         const ssoTrace = await fetchWithManualRedirects(match[1], baseHeaders, currentCookies);
@@ -121,18 +75,18 @@ export async function authenticateAcademicSystem(username: string, password: str
   // ─────────────────────────────────────────
   console.log('\n[TAHAP 2] POST Kredensial ke SSO...');
   const payload = new URLSearchParams({ username, password, credentialId: '' });
-  
+
   const loginRes = await fetch(formAction, {
     method: 'POST',
     headers: {
       ...baseHeaders,
       'Content-Type': 'application/x-www-form-urlencoded',
-      'Cookie': currentCookies,
-      'Origin': HTTP_CONFIG.SSO_ORIGIN_URL,
-      'Referer': formAction,
+      Cookie: currentCookies,
+      Origin: HTTP_CONFIG.SSO_ORIGIN_URL,
+      Referer: formAction,
     },
     body: payload.toString(),
-    redirect: 'manual', // Matikan auto-redirect
+    redirect: 'manual',
   });
 
   console.log(`[TAHAP 2] Status: ${loginRes.status}`);
@@ -162,7 +116,7 @@ export async function authenticateAcademicSystem(username: string, password: str
 
     const res = await fetch(redirectUrl, {
       method: 'GET',
-      headers: { ...baseHeaders, 'Cookie': currentCookies, 'Referer': formAction },
+      headers: { ...baseHeaders, Cookie: currentCookies, Referer: formAction },
       redirect: 'manual',
     });
 
@@ -191,11 +145,11 @@ export async function authenticateAcademicSystem(username: string, password: str
   // HASIL AKHIR
   // ─────────────────────────────────────────
   const finalPhpSessId = currentCookies.split(';').find(c => c.trim().startsWith('PHPSESSID='));
-  
-  // Jika PHPSESSID tidak ada di JS manual tracker, berarti ia disembunyikan dan 
+
+  // Jika PHPSESSID tidak ada di JS manual tracker, berarti ia disembunyikan dan
   // dikelola dengan sempurna oleh Native Cookie Jar (OS HP).
   const result = finalPhpSessId ? finalPhpSessId.trim() : 'NATIVE_MANAGED';
-  
-  console.log('[AUTH PIPELINE] ✅ Login berhasil, sesi dikelola:', result);
+
+  console.log('[AUTH PIPELINE] \u2705 Login berhasil, sesi dikelola:', result);
   return result;
 }

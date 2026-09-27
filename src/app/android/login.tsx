@@ -59,7 +59,7 @@ export default function LoginScreen() {
 
         {/* NIM */}
         <View className="mb-5">
-          <Text className="mb-2 text-sm font-black text-black uppercase tracking-wider">NIM / Username</Text>
+          <Text className="mb-2 text-sm font-black text-black uppercase tracking-wider">NIM / Username / E-mail UIN</Text>
           <TextInput
             className="rounded-lg border-2 border-black bg-[#ffde59] p-4 font-bold text-black border-b-[4px] border-r-[4px]"
             placeholder="Masukkan NIM"

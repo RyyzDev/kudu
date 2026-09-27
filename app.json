@@ -42,6 +42,7 @@
           "android": {
             "enableProguardInReleaseBuilds": true,
             "enableShrinkResourcesInReleaseBuilds": true,
+            "usesCleartextTraffic": true,
             "jsEngine": "hermes"
           },
           "ios": {

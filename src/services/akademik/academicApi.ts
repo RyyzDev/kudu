@@ -68,19 +68,23 @@ academicApi.interceptors.response.use(
         await SecureStore.setItemAsync('phpSessId', newPhpSessId);
 
         processQueue(null, newPhpSessId);
-        
+
+        // Reset SEBELUM retry agar tidak ada race condition:
+        // finally{} akan jalan segera setelah return (sebelum Promise resolve),
+        // sehingga isRefreshing harus di-reset manual di sini.
+        isRefreshing = false;
+
         if (newPhpSessId !== 'NATIVE_MANAGED') {
           originalRequest.headers['Cookie'] = newPhpSessId;
         } else {
           delete originalRequest.headers['Cookie'];
         }
-        
+
         return academicApi(originalRequest);
       } catch (err) {
+        isRefreshing = false;
         processQueue(err, null);
         return Promise.reject(err);
-      } finally {
-        isRefreshing = false;
       }
     }
 

@@ -8,7 +8,7 @@ import { getDetailPresensi, PertemuanItem, submitPresensi } from '../services/ak
 export default function PresensiDetailScreen() {
   const router = useRouter();
   const { url, matkul } = useLocalSearchParams<{ url: string; matkul: string }>();
-  
+
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [pertemuanList, setPertemuanList] = useState<PertemuanItem[]>([]);
@@ -18,9 +18,9 @@ export default function PresensiDetailScreen() {
       if (!url) throw new Error('URL kelas tidak valid.');
       const phpSessId = await SecureStore.getItemAsync('phpSessId');
       if (!phpSessId) throw new Error('Sesi tidak ditemukan.');
-      
+
       const decodedUrl = decodeURIComponent(url);
-      const data = await getDetailPresensi(decodedUrl, phpSessId);
+      const data = await getDetailPresensi(decodedUrl);
       setPertemuanList(data);
     } catch (e: any) {
       Alert.alert('Gagal', e.message);
@@ -33,18 +33,18 @@ export default function PresensiDetailScreen() {
     fetchDetail();
   }, [url]);
 
-  const [selectedPrs, setSelectedPrs] = useState<{ prsId: string, no: number } | null>(null);
+  const [selectedPrs, setSelectedPrs] = useState<{ prsId: string; no: number } | null>(null);
 
-  const executeSubmit = async (prsId: string, status: '1'|'2'|'3'|'4') => {
+  const executeSubmit = async (prsId: string, status: '1' | '2' | '3' | '4') => {
     setSelectedPrs(null);
     try {
       setSubmitting(true);
       const phpSessId = await SecureStore.getItemAsync('phpSessId');
       if (!phpSessId) throw new Error('Sesi tidak ditemukan.');
-      
+
       const decodedUrl = decodeURIComponent(url);
-      await submitPresensi(decodedUrl, prsId, phpSessId, status);
-      
+      await submitPresensi(decodedUrl, prsId, status);
+
       Alert.alert('Sukses', 'Berhasil mengisi presensi!');
       await fetchDetail();
     } catch (error: any) {
@@ -85,7 +85,7 @@ export default function PresensiDetailScreen() {
           contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 40 }}
           renderItem={({ item }) => {
             const isHadir = item.statusHadir.toLowerCase() === 'hadir';
-            
+
             return (
               <View className="rounded-xl border-2 border-black bg-white border-b-[5px] border-r-[5px] p-4 flex-row items-center gap-4">
                 {/* Nomor Pertemuan */}
@@ -98,7 +98,7 @@ export default function PresensiDetailScreen() {
                   <Text className="font-bold text-black text-xs">
                     {item.tanggalTerlaksana || item.tanggalRencana}
                   </Text>
-                  
+
                   {item.dosen.trim() !== '' && (
                     <Text className="font-bold text-black/60 text-[10px]" numberOfLines={1}>
                       <Feather name="user" size={10} /> {item.dosen}
@@ -149,33 +149,33 @@ export default function PresensiDetailScreen() {
             <Text className="text-xs font-bold text-black/60 text-center mb-5">
               Pertemuan ke-{selectedPrs?.no}
             </Text>
-            
+
             <View className="gap-3">
-              <TouchableOpacity 
+              <TouchableOpacity
                 className="bg-[#c1ff72] border-2 border-black p-3 rounded-lg items-center border-b-[4px] border-r-[4px]"
                 onPress={() => executeSubmit(selectedPrs!.prsId, '2')}
                 activeOpacity={0.8}
               >
                 <Text className="font-black text-black uppercase">Hadir</Text>
               </TouchableOpacity>
-              
-              <TouchableOpacity 
+
+              <TouchableOpacity
                 className="bg-[#ff914d] border-2 border-black p-3 rounded-lg items-center border-b-[4px] border-r-[4px]"
                 onPress={() => executeSubmit(selectedPrs!.prsId, '4')}
                 activeOpacity={0.8}
               >
                 <Text className="font-black text-black uppercase">Izin</Text>
               </TouchableOpacity>
-              
-              <TouchableOpacity 
+
+              <TouchableOpacity
                 className="bg-[#ffde59] border-2 border-black p-3 rounded-lg items-center border-b-[4px] border-r-[4px]"
                 onPress={() => executeSubmit(selectedPrs!.prsId, '3')}
                 activeOpacity={0.8}
               >
                 <Text className="font-black text-black uppercase">Sakit</Text>
               </TouchableOpacity>
-              
-              <TouchableOpacity 
+
+              <TouchableOpacity
                 className="bg-white border-2 border-black p-3 rounded-lg items-center border-b-[4px] border-r-[4px]"
                 onPress={() => executeSubmit(selectedPrs!.prsId, '1')}
                 activeOpacity={0.8}
@@ -184,7 +184,7 @@ export default function PresensiDetailScreen() {
               </TouchableOpacity>
             </View>
 
-            <TouchableOpacity 
+            <TouchableOpacity
               className="mt-6 p-2 items-center"
               onPress={() => setSelectedPrs(null)}
             >
