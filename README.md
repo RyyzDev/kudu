@@ -38,7 +38,7 @@ Saat ini, Kudu tersedia secara eksklusif untuk perangkat **Android** dalam forma
 Kamu tidak perlu melakukan *build* atau kompilasi kode sendiri untuk mencoba aplikasinya. Cukup unduh file APK terbaru yang telah di-generate oleh server Expo melalui tombol di bawah ini:
 
 <div align="center" style="margin: 20px 0;">
-  <a href="https://expo.dev/accounts/ryyzdev/projects/kudu/builds/947f6bb9-e61c-40d0-b482-6a5268df212b" target="_blank" style="text-decoration: none;">
+  <a href="https://expo.dev/accounts/ryyzdev/projects/kudu/builds/0ca82ee6-0b56-4563-b7f1-7f7555d7c8a8" target="_blank" style="text-decoration: none;">
     <div style="background-color: #000000; color: #ffffff; padding: 12px 24px; border-radius: 8px; display: inline-block; font-weight: bold; font-family: sans-serif; box-shadow: 0 4px 6px rgba(0,0,0,0.1); cursor: pointer;">
       ⬇️ Download APK via Expo
     </div>
@@ -123,8 +123,8 @@ npx expo start -c
 
 Kudu dirancang untuk terus berkembang menyesuaikan kebutuhan mahasiswa. Berikut adalah beberapa fitur dan proyeksi teknologi yang masuk dalam agenda pengembangan mendatang:
 
+*   **📖 Integrasi Web LMS:** *(Selesai di v1.1.0)* Integrasi native Moodle UIN Jakarta dengan Google SSO, ringkasan tugas & deadline, serta daftar mata kuliah.
 *   **🏛️ Integrasi Web Layanan FST:** Menghubungkan portal akademik umum dengan ekosistem sistem informasi/layanan khusus Fakultas Sains dan Teknologi (FST).
 *   **📱 Implementasi Widget Android:** Pengalaman akses cepat (*at-a-glance*) melalui Home Screen HP untuk melihat jadwal kuliah hari ini tanpa perlu membuka aplikasi.
 *   **🤖 Automasi Agentic AI untuk WAR KRS:** Pemanfaatan *agentic automation* pintar untuk membantu mahasiswa dalam proses pemilihan/pengambilan mata kuliah (KRS) dengan lebih presisi, efisien, dan otomatis.
-*   **📖 Integrasi Web LMS:** Menghubungkan Web LMS yang sudah ada kedalam Ekosistem Kudu, dimana mahasiswa bisa melakukan berbagai aktivitas di LMS melalui Kudu agar produktivitas semakin meningkat. 
 *   **🚀 Dan Masih Banyak Lagi...** Penyesuaian performa, fitur *caching* offline lanjutan, serta peningkatan pengalaman pengguna (*UX*) secara berkala.
