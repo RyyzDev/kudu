@@ -9,10 +9,12 @@ import { PresensiContent } from '../components/akademik/PresensiTab';
 import { KhsContent } from '../components/akademik/KhsTab';
 import { TagihanContent } from '../components/akademik/TagihanTab';
 import { ComingSoon } from '../components/akademik/ComingSoon';
+import { ProfileModal } from '../components/akademik/ProfileModal';
 
 export default function AkademikScreen() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('krs');
+  const [showProfile, setShowProfile] = useState(false);
 
   const renderContent = () => {
     switch (activeTab) {
@@ -44,6 +46,16 @@ export default function AkademikScreen() {
           <Text className="font-black text-black uppercase text-xs">Home</Text>
         </TouchableOpacity>
 
+        {/* Tombol Profil di Tengah */}
+        <TouchableOpacity
+          onPress={() => setShowProfile(true)}
+          className="flex-row items-center gap-1.5 border-2 border-black bg-[#ffde59] px-3.5 py-2 rounded-lg border-b-[4px] border-r-[4px]"
+          activeOpacity={0.8}
+        >
+          <Feather name="user" size={16} color="black" />
+          <Text className="font-black text-black uppercase text-xs">Profile</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity
           onPress={handleLogout}
           className="flex-row items-center gap-1.5 border-2 border-black bg-[#ff914d] px-3 py-2 rounded-lg border-b-[4px] border-r-[4px]"
@@ -53,6 +65,8 @@ export default function AkademikScreen() {
           <Text className="font-black text-black uppercase text-xs">Logout</Text>
         </TouchableOpacity>
       </View>
+
+      <ProfileModal visible={showProfile} onClose={() => setShowProfile(false)} />
 
       {/* Judul Halaman */}
       <View className="px-5 mt-6 mb-2">

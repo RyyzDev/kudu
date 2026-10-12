@@ -1,4 +1,34 @@
+import * as cheerio from 'cheerio';
 import { updateCookies, extractSetCookies } from '../../utils/cookieUtils';
+
+// ==========================================
+// HELPER: Ekstraksi tag <meta http-equiv="refresh">
+// ==========================================
+export function extractMetaRefresh(html: string, currentUrl: string): { url: string; delay: number } | null {
+  if (!html || typeof html !== 'string') return null;
+  const $ = cheerio.load(html);
+  const metaContent = $('meta[http-equiv="refresh" i]').attr('content');
+  if (!metaContent) return null;
+
+  const match = metaContent.match(/^\s*(\d+)?\s*(?:;\s*url\s*=\s*(?:['"]?)(.*?)(?:['"]?))?\s*$/i);
+  if (!match) return null;
+
+  const delay = match[1] ? parseInt(match[1], 10) : 0;
+  let targetUrl = match[2]?.trim();
+
+  if (!targetUrl) {
+    return { url: currentUrl, delay };
+  }
+
+  targetUrl = targetUrl.replace(/^['"]|['"]$/g, '');
+
+  try {
+    const resolvedUrl = new URL(targetUrl, currentUrl).toString();
+    return { url: resolvedUrl, delay };
+  } catch {
+    return null;
+  }
+}
 
 // ==========================================
 // HELPER: HTTP GET dengan auto-redirect manual & cookie collector
@@ -8,7 +38,8 @@ export async function fetchWithManualRedirects(
   initialUrl: string,
   baseHeaders: Record<string, string>,
   initialCookies: string = '',
-  maxRedirects: number = 5
+  maxRedirects: number = 5,
+  options: { forcePromptLogin?: boolean } = {}
 ): Promise<{ res: Response; currentUrl: string; currentCookies: string }> {
   let currentUrl = initialUrl;
   let currentCookies = initialCookies;
@@ -41,10 +72,7 @@ export async function fetchWithManualRedirects(
         location = `${urlObj.origin}${location.startsWith('/') ? '' : '/'}${location}`;
       }
 
-      // FIX NATIVE COOKIE JAR BYPASS:
-      // Jika dialihkan ke halaman otorisasi Keycloak, paksa login ulang
-      // agar tidak otomatis masuk pakai sesi lama yang nyangkut di sistem HP.
-      if (location.includes('/protocol/openid-connect/auth') && !location.includes('prompt=login')) {
+      if (options.forcePromptLogin && location.includes('/protocol/openid-connect/auth') && !location.includes('prompt=login')) {
         location += '&prompt=login';
       }
 

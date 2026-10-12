@@ -47,7 +47,9 @@ export default function ELetterScreen() {
       let storedPwd = null;
       if (Platform.OS !== 'web') {
         storedNim = await SecureStore.getItemAsync('nim');
-        storedPwd = await SecureStore.getItemAsync('password');
+        storedPwd =
+          (await SecureStore.getItemAsync('eletter_password')) ||
+          (await SecureStore.getItemAsync('password'));
       }
 
       if (storedNim && storedPwd) {
@@ -73,6 +75,10 @@ export default function ELetterScreen() {
     try {
       const success = await loginELetter(username, password);
       if (success) {
+        if (Platform.OS !== 'web') {
+          await SecureStore.setItemAsync('nim', username);
+          await SecureStore.setItemAsync('eletter_password', password);
+        }
         setIsLoggedIn(true);
         loadDashboard();
       }

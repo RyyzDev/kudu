@@ -1,7 +1,7 @@
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import { HTTP_CONFIG } from './httpConfig';
-import { authenticateAcademicSystem } from './authService';
+import { authenticateAcademicSystem, performSilentLogin } from './authService';
 
 // Instance axios khusus untuk Portal Akademik
 export const academicApi = axios.create({
@@ -38,14 +38,17 @@ academicApi.interceptors.response.use(
       typeof response.data === 'string' &&
       (response.data.includes('kc-form-login') || 
        response.data.includes('Log in to') ||
-       response.data.includes('Anda tidak diijinkan mengakses module ini'));
+       response.data.includes('Anda tidak diijinkan') ||
+       response.data.includes('Kami mengira Anda telah pergi') ||
+       response.data.includes('menutup sesi') ||
+       response.data.includes('pModule=zdKbnKU'));
 
     if (isSessionExpired && !originalRequest._retry) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
         }).then(newSessId => {
-          if (newSessId !== 'NATIVE_MANAGED') {
+          if (newSessId && newSessId !== 'NATIVE_MANAGED') {
             originalRequest.headers['Cookie'] = newSessId;
           } else {
             delete originalRequest.headers['Cookie'];
@@ -58,20 +61,20 @@ academicApi.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        const username = await SecureStore.getItemAsync('nim');
-        const password = await SecureStore.getItemAsync('password');
+        console.log('[INTERCEPTOR] Sesi habis. Menjalankan silent login...');
+        let newPhpSessId: string;
+        try {
+          newPhpSessId = await performSilentLogin(response.data, originalRequest.url);
+        } catch (silentErr) {
+          console.warn('[INTERCEPTOR] Silent login gagal, mencoba fallback authenticateAcademicSystem...', silentErr);
+          const username = await SecureStore.getItemAsync('nim');
+          const password = await SecureStore.getItemAsync('password');
+          if (!username || !password) throw silentErr;
+          newPhpSessId = await authenticateAcademicSystem(username, password);
+        }
 
-        if (!username || !password) throw new Error('Kredensial kosong. Silakan login ulang.');
-
-        console.log('[INTERCEPTOR] Sesi habis. Melakukan silent quarantine login...');
-        const newPhpSessId = await authenticateAcademicSystem(username, password);
         await SecureStore.setItemAsync('phpSessId', newPhpSessId);
-
         processQueue(null, newPhpSessId);
-
-        // Reset SEBELUM retry agar tidak ada race condition:
-        // finally{} akan jalan segera setelah return (sebelum Promise resolve),
-        // sehingga isRefreshing harus di-reset manual di sini.
         isRefreshing = false;
 
         if (newPhpSessId !== 'NATIVE_MANAGED') {

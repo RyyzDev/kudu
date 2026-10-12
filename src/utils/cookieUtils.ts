@@ -19,13 +19,16 @@ export function updateCookies(existingCookieStr: string = '', newSetCookieArray:
 
   // Parse & timpa dengan cookies baru dari response header
   newSetCookieArray.forEach(cookieRaw => {
-    // Abaikan cookie yang expired (Max-Age=0) dari Keycloak
-    if (!cookieRaw.includes('Max-Age=0')) {
-      const mainCookie = cookieRaw.split(';')[0].trim();
-      const parts = mainCookie.split('=');
-      const key = parts[0]?.trim();
-      const val = parts.slice(1).join('=')?.trim();
-      if (key && val) cookieMap[key] = val;
+    const mainCookie = cookieRaw.split(';')[0].trim();
+    const parts = mainCookie.split('=');
+    const key = parts[0]?.trim();
+    const val = parts.slice(1).join('=')?.trim();
+    if (!key) return;
+
+    if (cookieRaw.includes('Max-Age=0') || cookieRaw.includes('expires=Thu, 01 Jan 1970')) {
+      delete cookieMap[key];
+    } else if (val !== undefined) {
+      cookieMap[key] = val;
     }
   });
 
@@ -33,16 +36,20 @@ export function updateCookies(existingCookieStr: string = '', newSetCookieArray:
 }
 
 /**
- * Mengekstrak array Set-Cookie dari response headers Native fetch.
- * React Native's fetch Headers tidak support getSetCookie() secara merata,
- * sehingga kita baca manual dari header 'set-cookie'.
+ * Mengekstrak array Set-Cookie dari response headers Native fetch atau Axios.
  */
-export function extractSetCookies(headers: Headers): string[] {
-  if (typeof (headers as any).getSetCookie === 'function') {
-    return (headers as any).getSetCookie() as string[];
+export function extractSetCookies(headers: any): string[] {
+  if (!headers) return [];
+  if (typeof headers.getSetCookie === 'function') {
+    return headers.getSetCookie() as string[];
   }
-  const raw = headers.get('set-cookie');
+  let raw: any;
+  if (typeof headers.get === 'function') {
+    raw = headers.get('set-cookie');
+  } else {
+    raw = headers['set-cookie'] || headers['Set-Cookie'];
+  }
   if (!raw) return [];
-  // Split by ", " yang mendahului nama cookie baru (heuristik umum)
-  return raw.split(/,(?=[^;]+=)/).map(s => s.trim());
+  if (Array.isArray(raw)) return raw;
+  return String(raw).split(/,(?=[^;]+=)/).map((s: string) => s.trim());
 }

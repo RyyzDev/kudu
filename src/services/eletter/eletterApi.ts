@@ -42,6 +42,56 @@ eletterApi.interceptors.request.use(config => {
   return config;
 });
 
+async function handleEletterSessionExpired(originalRequest: any) {
+  if (isRefreshing) {
+    return new Promise((resolve, reject) => {
+      failedQueue.push({ resolve, reject });
+    })
+      .then(() => eletterApi(originalRequest))
+      .catch(err => Promise.reject(err));
+  }
+
+  originalRequest._retry = true;
+  isRefreshing = true;
+
+  try {
+    let username = null;
+    let password = null;
+
+    if (Platform.OS !== 'web') {
+      username = await SecureStore.getItemAsync('nim');
+      // Prioritaskan password eletter khusus jika ada, jika tidak fallback ke password utama
+      password =
+        (await SecureStore.getItemAsync('eletter_password')) ||
+        (await SecureStore.getItemAsync('password'));
+    }
+
+    if (!username || !password) throw new Error('Kredensial E-Letter kosong. Silakan login ulang.');
+
+    console.log('[ELETTER-INTERCEPTOR] Sesi habis. Melakukan silent login...');
+    await loginELetter(username, password, true);
+
+    processQueue(null);
+    isRefreshing = false;
+
+    // Pastikan cookie dan XSRF header terbaru diinjeksi ke originalRequest
+    const newCookies = getEletterCookies();
+    if (newCookies) {
+      originalRequest.headers['Cookie'] = newCookies;
+      const xsrfMatch = newCookies.match(/XSRF-TOKEN=([^;]+)/);
+      if (xsrfMatch) {
+        originalRequest.headers['X-XSRF-TOKEN'] = decodeURIComponent(xsrfMatch[1]);
+      }
+    }
+
+    return eletterApi(originalRequest);
+  } catch (err) {
+    isRefreshing = false;
+    processQueue(err);
+    return Promise.reject(err);
+  }
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // RESPONSE INTERCEPTOR: Deteksi sesi habis → silent login → retry
 // ─────────────────────────────────────────────────────────────────────────────
@@ -52,47 +102,32 @@ eletterApi.interceptors.response.use(
     // Deteksi jika HTML merender form login (menandakan sesi habis)
     const isSessionExpired =
       typeof response.data === 'string' &&
-      response.data.includes('id="loginform"');
+      (response.data.includes('id="loginform"') || response.data.includes('name="username"'));
 
     if (isSessionExpired && !originalRequest._retry) {
-      if (isRefreshing) {
-        return new Promise((resolve, reject) => {
-          failedQueue.push({ resolve, reject });
-        }).then(() => eletterApi(originalRequest))
-          .catch(err => Promise.reject(err));
-      }
-
-      originalRequest._retry = true;
-      isRefreshing = true;
-
-      try {
-        let username = null;
-        let password = null;
-
-        if (Platform.OS !== 'web') {
-          username = await SecureStore.getItemAsync('nim');
-          password = await SecureStore.getItemAsync('password');
-        }
-
-        if (!username || !password) throw new Error('Kredensial kosong. Silakan login ulang.');
-
-        console.log('[ELETTER-INTERCEPTOR] Sesi habis. Melakukan silent login...');
-        await loginELetter(username, password);
-        // loginELetter memperbarui _eletterCookies di eletterAuthService secara internal.
-        // Request interceptor akan otomatis inject cookies baru saat retry.
-
-        processQueue(null);
-        isRefreshing = false; // Reset di sini, BUKAN di finally (lihat academicApi.ts)
-
-        return eletterApi(originalRequest);
-      } catch (err) {
-        isRefreshing = false;
-        processQueue(err);
-        return Promise.reject(err);
-      }
+      return handleEletterSessionExpired(originalRequest);
     }
 
     return response;
   },
-  error => Promise.reject(error)
+  async error => {
+    const originalRequest = error.config as any;
+
+    if (!originalRequest) {
+      return Promise.reject(error);
+    }
+
+    const status = error.response?.status;
+    const isServerErrorOrExpired =
+      status === 500 ||
+      status === 419 ||
+      status === 401 ||
+      (typeof error.response?.data === 'string' && error.response?.data.includes('id="loginform"'));
+
+    if (isServerErrorOrExpired && !originalRequest._retry) {
+      return handleEletterSessionExpired(originalRequest);
+    }
+
+    return Promise.reject(error);
+  }
 );

@@ -20,6 +20,14 @@ export function getEletterCookies(): string {
   return _eletterCookies;
 }
 
+export function setEletterCookies(cookies: string): void {
+  _eletterCookies = cookies;
+}
+
+export function clearEletterCookies(): void {
+  _eletterCookies = '';
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // CEK SESI: validasi apakah laravel_session yang tersimpan masih berlaku
 // ─────────────────────────────────────────────────────────────────────────────
@@ -48,12 +56,20 @@ export async function checkELetterSession(): Promise<boolean> {
 // STEP 1: GET / → kumpulkan XSRF-TOKEN + laravel_session awal
 // STEP 2: POST /login (manual redirect) → kumpulkan laravel_session baru
 // ─────────────────────────────────────────────────────────────────────────────
-export async function loginELetter(username: string, password: string): Promise<boolean> {
-  console.log('\n[ELETTER-AUTH] Memulai login untuk:', username);
+export async function loginELetter(
+  username: string,
+  password: string,
+  forceFresh: boolean = false
+): Promise<boolean> {
+  console.log('\n[ELETTER-AUTH] Memulai login untuk:', username, forceFresh ? '(Cold/Silent Login)' : '');
+
+  if (forceFresh) {
+    _eletterCookies = '';
+  }
 
   // ── STEP 1: GET login page ──
   const getRes = await fetch(ELETTER_URL + '/', {
-    headers: { ...DEFAULT_HEADERS, Cookie: _eletterCookies },
+    headers: { ...DEFAULT_HEADERS, ...(forceFresh ? {} : (_eletterCookies ? { Cookie: _eletterCookies } : {})) },
     redirect: 'follow', // Ikuti redirect ke halaman login jika ada
   });
 
