@@ -38,7 +38,7 @@ Saat ini, Kudu tersedia secara eksklusif untuk perangkat **Android** dalam forma
 Kamu tidak perlu melakukan *build* atau kompilasi kode sendiri untuk mencoba aplikasinya. Cukup unduh file APK terbaru yang telah di-generate oleh server Expo melalui tombol di bawah ini:
 
 <div align="center" style="margin: 20px 0;">
-  <a href="https://expo.dev/accounts/ryyzdev/projects/kudu/builds/0ca82ee6-0b56-4563-b7f1-7f7555d7c8a8" target="_blank" style="text-decoration: none;">
+  <a href="https://expo.dev/accounts/ryyzdev/projects/kudu/builds/077ead7b-ad88-4883-9ee7-41937c76bf6d" target="_blank" style="text-decoration: none;">
     <div style="background-color: #000000; color: #ffffff; padding: 12px 24px; border-radius: 8px; display: inline-block; font-weight: bold; font-family: sans-serif; box-shadow: 0 4px 6px rgba(0,0,0,0.1); cursor: pointer;">
       ⬇️ Download APK via Expo
     </div>
