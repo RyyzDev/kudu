@@ -1,5 +1,5 @@
 import * as cheerio from 'cheerio';
-import { LmsCourse, LmsAssignment } from './lmsTypes';
+import { LmsCourse, LmsAssignment, LmsSearchCourseItem } from './lmsTypes';
 
 /**
  * Membersihkan HTML entity dan tag HTML dari teks nama matakuliah / tugas
@@ -150,3 +150,55 @@ export function parseCoursesFromHtml(html: string): LmsCourse[] {
 
   return courses;
 }
+
+/**
+ * Parser khusus untuk halaman pencarian matakuliah LMS Moodle:
+ * https://lms.uinjakarta.id/course/search.php
+ * https://lms.uinjakarta.id/course/index.php
+ */
+export function parseSearchCoursesFromHtml(html: string): LmsSearchCourseItem[] {
+  if (!html || typeof html !== 'string') return [];
+  const $ = cheerio.load(html);
+  const results: LmsSearchCourseItem[] = [];
+
+  $('.coursebox').each((_, el) => {
+    const $el = $(el);
+    const dataId = $el.attr('data-courseid');
+    const linkEl = $el.find('.coursename a, h3 a, a.aalink').first();
+    const href = linkEl.attr('href') || '';
+    const name = cleanHtmlText(linkEl.text());
+
+    let id = dataId ? parseInt(dataId, 10) : 0;
+    if (!id && href) {
+      const match = href.match(/id=(\d+)/);
+      if (match) id = parseInt(match[1], 10);
+    }
+
+    if (!name && !id) return;
+
+    const infoHref = $el.find('.moreinfo a').first().attr('href') || '';
+    const isSelfEnrol =
+      $el.find('.enrolmenticons .fa-key').length > 0 ||
+      $el.find('.enrolmenticons [title*="Self enrolment" i]').length > 0;
+
+    const summary = cleanHtmlText($el.find('.content .summary, .summary').text());
+
+    results.push({
+      id,
+      name,
+      url: href.startsWith('http')
+        ? href
+        : `https://lms.uinjakarta.id${href.startsWith('/') ? '' : '/'}${href}`,
+      infoUrl: infoHref
+        ? (infoHref.startsWith('http')
+            ? infoHref
+            : `https://lms.uinjakarta.id${infoHref.startsWith('/') ? '' : '/'}${infoHref}`)
+        : undefined,
+      isSelfEnrol,
+      summary: summary || undefined,
+    });
+  });
+
+  return results;
+}
+

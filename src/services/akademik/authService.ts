@@ -89,11 +89,7 @@ export async function executeTokenExchangeLoop(
   }
 
   const finalPhpSessId = currentCookies.split(';').find(c => c.trim().startsWith('PHPSESSID='));
-  const resultPhpSessId = finalPhpSessId ? finalPhpSessId.trim() : discoveredPhpSessId;
-
-  if (!resultPhpSessId) {
-    throw new Error('PHPSESSID gagal didapatkan setelah siklus penukaran token.');
-  }
+  const resultPhpSessId = finalPhpSessId ? finalPhpSessId.trim() : (discoveredPhpSessId || 'NATIVE_MANAGED');
 
   console.log('[TOKEN EXCHANGE] ✅ Sesi berhasil diperoleh:', resultPhpSessId);
   setActiveAcademicCookies(currentCookies);
@@ -114,9 +110,12 @@ export async function performSilentLogin(
   console.log('[SILENT LOGIN] Memulai siklus pemulihan sesi...');
   console.log('========================================\n');
 
-  const username = await SecureStore.getItemAsync('nim');
-  const password = await SecureStore.getItemAsync('password');
-  const savedPhpSessId = await SecureStore.getItemAsync('phpSessId');
+  const username =
+    (await SecureStore.getItemAsync('akademik_nim')) || (await SecureStore.getItemAsync('nim'));
+  const password =
+    (await SecureStore.getItemAsync('akademik_password')) || (await SecureStore.getItemAsync('password'));
+  const savedPhpSessId =
+    (await SecureStore.getItemAsync('akademik_phpSessId')) || (await SecureStore.getItemAsync('phpSessId'));
 
   let currentCookies = getActiveAcademicCookies() || (savedPhpSessId && savedPhpSessId !== 'NATIVE_MANAGED' ? savedPhpSessId : '');
   // Bersihkan PHPSESSID yang sudah mati agar server PHP menerbitkan sesi baru
@@ -384,31 +383,58 @@ export async function authenticateAcademicSystem(username: string, password: str
   console.log('\n[TAHAP 2] POST Kredensial ke SSO...');
   const payload = new URLSearchParams({ username, password, credentialId: '' });
 
+  const postHeaders: Record<string, string> = {
+    ...baseHeaders,
+    'Content-Type': 'application/x-www-form-urlencoded',
+    Origin: HTTP_CONFIG.SSO_ORIGIN_URL,
+    Referer: formAction,
+  };
+  if (currentCookies && currentCookies !== 'NATIVE_MANAGED') {
+    postHeaders['Cookie'] = currentCookies;
+  }
+
   const loginRes = await fetch(formAction, {
     method: 'POST',
-    headers: {
-      ...baseHeaders,
-      'Content-Type': 'application/x-www-form-urlencoded',
-      Cookie: currentCookies,
-      Origin: HTTP_CONFIG.SSO_ORIGIN_URL,
-      Referer: formAction,
-    },
+    headers: postHeaders,
     body: payload.toString(),
     redirect: 'manual',
   });
 
-  console.log(`[TAHAP 2] Status: ${loginRes.status}`);
+  console.log(`[TAHAP 2] Status: ${loginRes.status}, URL: ${loginRes.url || 'N/A'}`);
   let loginLocation = loginRes.headers.get('location');
 
-  if (loginRes.status !== 302 || !loginLocation) {
-    if (loginRes.status === 200) {
-      console.error('[TAHAP 2] Server membalas 200 (Bukan redirect). Kemungkinan password salah.');
+  if ((loginRes.status === 302 || loginRes.status === 301) && loginLocation) {
+    if (!loginLocation.startsWith('http')) {
+      loginLocation = new URL(loginLocation, formAction).toString();
     }
-    throw new Error('Login Gagal. Username/Password salah.');
-  }
+  } else if (loginRes.status === 200) {
+    // Skenario: React Native OkHttpClient auto-follow 302 ke URL tujuan
+    const loginHtml = await loginRes.text();
+    const $loginRes = cheerio.load(loginHtml);
+    const hasLoginForm = $loginRes('#kc-form-login').length > 0;
+    const hasErrorAlert = $loginRes('.alert-error, #input-error, .kc-feedback-text').length > 0;
 
-  if (!loginLocation.startsWith('http')) {
-    loginLocation = new URL(loginLocation, formAction).toString();
+    if (
+      hasLoginForm &&
+      (hasErrorAlert ||
+        loginHtml.includes('Invalid username or password') ||
+        loginHtml.includes('Username atau password salah'))
+    ) {
+      console.error('[TAHAP 2] Server membalas form login dengan pesan kesalahan kredensial.');
+      throw new Error('Login Gagal. Username/Password salah.');
+    }
+
+    const metaRefresh = extractMetaRefresh(loginHtml, loginRes.url || formAction);
+    if (metaRefresh) {
+      loginLocation = metaRefresh.url;
+    } else if (loginRes.url && loginRes.url.includes('akademik.uinjkt.ac.id')) {
+      console.log('[TAHAP 2] Auto-follow mendarat di portal akademik:', loginRes.url);
+      loginLocation = loginRes.url;
+    } else {
+      loginLocation = loginRes.url || HTTP_CONFIG.AKADEMIK_ORIGIN_URL;
+    }
+  } else {
+    throw new Error('Login Gagal. Username/Password salah.');
   }
 
   currentCookies = updateCookies(currentCookies, extractSetCookies(loginRes.headers));

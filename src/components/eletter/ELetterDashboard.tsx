@@ -20,12 +20,13 @@ interface Props {
   onSelectSurat: (val: string) => void;
   onSetTipe: (val: string) => void;
   onSubmit: () => void;
+  onLogout?: () => void;
 }
 
 export function ELetterDashboard({
   activeTab, suratList, loadingDashboard, formOptions,
   selectedSurat, mahasiswaInfo, tipePengajuan, isSubmitting,
-  onSwitchTab, onSelectSurat, onSetTipe, onSubmit,
+  onSwitchTab, onSelectSurat, onSetTipe, onSubmit, onLogout,
 }: Props) {
   const router = useRouter();
 
@@ -39,13 +40,24 @@ export function ELetterDashboard({
             Surat Digital FST
           </Text>
         </View>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          className="w-12 h-12 bg-white border-2 border-black rounded-xl items-center justify-center border-b-[4px] border-r-[4px]"
-          activeOpacity={0.8}
-        >
-          <Feather name="x" size={24} color="black" />
-        </TouchableOpacity>
+        <View className="flex-row items-center gap-2">
+          {onLogout && (
+            <TouchableOpacity
+              onPress={onLogout}
+              className="w-12 h-12 bg-[#ff4d4d] border-2 border-black rounded-xl items-center justify-center border-b-[4px] border-r-[4px]"
+              activeOpacity={0.8}
+            >
+              <Feather name="log-out" size={20} color="white" />
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity
+            onPress={() => router.back()}
+            className="w-12 h-12 bg-white border-2 border-black rounded-xl items-center justify-center border-b-[4px] border-r-[4px]"
+            activeOpacity={0.8}
+          >
+            <Feather name="x" size={24} color="black" />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Tab Nav */}

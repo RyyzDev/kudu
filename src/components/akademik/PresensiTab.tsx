@@ -13,7 +13,9 @@ export function PresensiContent() {
   useEffect(() => {
     (async () => {
       try {
-        const phpSessId = await SecureStore.getItemAsync('phpSessId');
+        const phpSessId =
+          (await SecureStore.getItemAsync('akademik_phpSessId')) ||
+          (await SecureStore.getItemAsync('phpSessId'));
         if (!phpSessId) throw new Error('Sesi tidak ditemukan.');
         const data = await getDataPresensi();
         setPresensiList(data);

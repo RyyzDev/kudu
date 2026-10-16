@@ -15,7 +15,9 @@ export function KhsContent() {
   useEffect(() => {
     (async () => {
       try {
-        const phpSessId = await SecureStore.getItemAsync('phpSessId');
+        const phpSessId =
+          (await SecureStore.getItemAsync('akademik_phpSessId')) ||
+          (await SecureStore.getItemAsync('phpSessId'));
         if (!phpSessId) throw new Error('Sesi tidak ditemukan.');
 
         const sems = await getKhsSemesters();
@@ -38,7 +40,9 @@ export function KhsContent() {
     (async () => {
       setFetchingData(true);
       try {
-        const phpSessId = await SecureStore.getItemAsync('phpSessId');
+        const phpSessId =
+          (await SecureStore.getItemAsync('akademik_phpSessId')) ||
+          (await SecureStore.getItemAsync('phpSessId'));
         if (!phpSessId) throw new Error('Sesi tidak ditemukan.');
 
         const result = await getKhsData(activeSemester);

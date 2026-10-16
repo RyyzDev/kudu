@@ -21,22 +21,25 @@ export const LMS_INJECTED_SCRIPT = `
         return;
       }
 
-      // Rapikan tampilan login agar tombol Google lebih fokus dan mudah di-tap
-      var style = document.createElement('style');
-      style.innerHTML = \`
-        #page-footer, .breadcrumb, .navbar, .login-divider, form#login { display: none !important; }
-        .login-wrapper { padding: 15px !important; }
-        .login-identityprovider a {
-          background-color: #ffde59 !important;
-          color: #000000 !important;
-          border: 2px solid #000000 !important;
-          font-weight: 900 !important;
-          padding: 14px !important;
-          border-radius: 12px !important;
-          box-shadow: 4px 4px 0px #000000 !important;
-        }
-      \`;
-      document.head.appendChild(style);
+      // Cari tombol Google SSO
+      var googleBtn = document.querySelector('a[href*="auth/oauth2/login.php?id=1"]');
+      if (googleBtn) {
+        googleBtn.style.display = 'block';
+        googleBtn.style.backgroundColor = '#ffde59';
+        googleBtn.style.color = '#000000';
+        googleBtn.style.border = '3px solid #000000';
+        googleBtn.style.fontWeight = '900';
+        googleBtn.style.padding = '14px';
+        googleBtn.style.borderRadius = '12px';
+        googleBtn.style.boxShadow = '4px 4px 0px #000000';
+        googleBtn.style.textAlign = 'center';
+        googleBtn.style.fontSize = '16px';
+
+        // Auto-redirect ke Google Login setelah halaman siap
+        setTimeout(function() {
+          googleBtn.click();
+        }, 400);
+      }
       return;
     }
 

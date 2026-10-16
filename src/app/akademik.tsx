@@ -27,6 +27,9 @@ export default function AkademikScreen() {
   };
 
   const handleLogout = async () => {
+    await SecureStore.deleteItemAsync('akademik_nim');
+    await SecureStore.deleteItemAsync('akademik_password');
+    await SecureStore.deleteItemAsync('akademik_phpSessId');
     await SecureStore.deleteItemAsync('nim');
     await SecureStore.deleteItemAsync('password');
     await SecureStore.deleteItemAsync('phpSessId');

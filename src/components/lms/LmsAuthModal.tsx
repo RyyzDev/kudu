@@ -44,9 +44,21 @@ export function LmsAuthModal({ visible, onClose, onSuccess }: LmsAuthModalProps)
     }
   };
 
+  const handleManualGoogleClick = () => {
+    webViewRef.current?.injectJavaScript(`
+      var googleBtn = document.querySelector('a[href*="auth/oauth2/login.php?id=1"]');
+      if (googleBtn) {
+        googleBtn.click();
+      } else {
+        window.location.href = 'https://lms.uinjakarta.id/login/index.php';
+      }
+      true;
+    `);
+  };
+
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <SafeAreaView className="flex-1 bg-[#f4f4f0]">
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#f4f4f0' }}>
         {/* Header Neobrutalism */}
         <View className="px-4 py-3 bg-white border-b-2 border-black flex-row items-center justify-between">
           <View className="flex-1 pr-3">
@@ -61,7 +73,7 @@ export function LmsAuthModal({ visible, onClose, onSuccess }: LmsAuthModalProps)
             <Text className="text-xs text-black/60 font-bold" numberOfLines={1}>
               {currentUrl.includes('accounts.google.com')
                 ? 'Sedang di halaman Google Sign-In'
-                : 'Pilih tombol Google untuk masuk'}
+                : 'Pilih akun Google Anda untuk masuk'}
             </Text>
           </View>
 
@@ -84,8 +96,8 @@ export function LmsAuthModal({ visible, onClose, onSuccess }: LmsAuthModalProps)
           </View>
         )}
 
-        {/* In-App WebView */}
-        <View className="flex-1">
+        {/* In-App WebView with explicit flex and dimension styling */}
+        <View style={{ flex: 1, width: '100%', height: '100%', backgroundColor: '#ffffff' }}>
           <WebView
             ref={webViewRef}
             source={{ uri: 'https://lms.uinjakarta.id/login/index.php' }}
@@ -94,17 +106,27 @@ export function LmsAuthModal({ visible, onClose, onSuccess }: LmsAuthModalProps)
             thirdPartyCookiesEnabled={true}
             domStorageEnabled={true}
             javaScriptEnabled={true}
+            mixedContentMode="always"
+            setSupportMultipleWindows={false}
+            allowsBackForwardNavigationGestures={true}
+            originWhitelist={['*']}
             injectedJavaScript={LMS_INJECTED_SCRIPT}
             onMessage={handleMessage}
             onLoadStart={() => setLoading(true)}
             onLoadEnd={() => {
               setLoading(false);
-              // Jalankan injeksi ulang saat halaman selesai dimuat
               webViewRef.current?.injectJavaScript(LMS_INJECTED_SCRIPT);
+            }}
+            onError={e => {
+              console.warn('LMS WebView Error:', e.nativeEvent);
+              setLoading(false);
+            }}
+            onHttpError={e => {
+              console.warn('LMS WebView HTTP Error:', e.nativeEvent);
+              setLoading(false);
             }}
             onNavigationStateChange={navState => {
               setCurrentUrl(navState.url);
-              // Jika URL berada di /my/ atau halaman beranda setelah login, jalankan ekstraksi
               if (
                 navState.url.includes('lms.uinjakarta.id') &&
                 !navState.url.includes('/login/') &&
@@ -113,16 +135,25 @@ export function LmsAuthModal({ visible, onClose, onSuccess }: LmsAuthModalProps)
                 webViewRef.current?.injectJavaScript(LMS_INJECTED_SCRIPT);
               }
             }}
-            style={{ flex: 1 }}
+            style={{ flex: 1, width: '100%', height: '100%' }}
           />
         </View>
 
-        {/* Petunjuk Bawah */}
-        <View className="px-4 py-3 bg-[#ffde59] border-t-2 border-black flex-row items-center gap-2">
-          <Feather name="info" size={16} color="black" />
-          <Text className="text-xs font-bold text-black flex-1">
-            Klik tombol <Text className="font-black">Google</Text> pada halaman di atas untuk login dengan akun kampus Anda.
-          </Text>
+        {/* Bottom Bar: Action Helper Button */}
+        <View className="px-4 py-3 bg-[#ffde59] border-t-2 border-black flex-row items-center justify-between gap-3">
+          <View className="flex-1">
+            <Text className="text-[11px] font-bold text-black" numberOfLines={2}>
+              Aplikasi akan otomatis mengarahkan ke Google Sign-In.
+            </Text>
+          </View>
+          <TouchableOpacity
+            onPress={handleManualGoogleClick}
+            className="bg-black border border-black px-3 py-2 rounded-lg flex-row items-center gap-1.5"
+            activeOpacity={0.8}
+          >
+            <Feather name="log-in" size={14} color="white" />
+            <Text className="text-white text-xs font-black uppercase">Buka Google</Text>
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     </Modal>

@@ -42,8 +42,10 @@ export default function HomeScreen() {
   const router = useRouter();
 
   const handleAkademikPress = async () => {
-    const nim = await SecureStore.getItemAsync('nim');
-    const phpSessId = await SecureStore.getItemAsync('phpSessId');
+    const nim =
+      (await SecureStore.getItemAsync('akademik_nim')) || (await SecureStore.getItemAsync('nim'));
+    const phpSessId =
+      (await SecureStore.getItemAsync('akademik_phpSessId')) || (await SecureStore.getItemAsync('phpSessId'));
     
     // Jika sudah pernah login, langsung ke dashboard Akademik (Venus UI)
     if (nim && phpSessId) {

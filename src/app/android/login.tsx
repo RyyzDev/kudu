@@ -35,6 +35,9 @@ export default function LoginScreen() {
     try {
       // authService mengembalikan "PHPSESSID=xxx" (format asli)
       const phpSessId = await authenticateAcademicSystem(username, password);
+      await SecureStore.setItemAsync('akademik_nim', username);
+      await SecureStore.setItemAsync('akademik_password', password);
+      await SecureStore.setItemAsync('akademik_phpSessId', phpSessId);
       await SecureStore.setItemAsync('nim', username);
       await SecureStore.setItemAsync('password', password);
       await SecureStore.setItemAsync('phpSessId', phpSessId);

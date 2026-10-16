@@ -59,11 +59,8 @@ async function handleEletterSessionExpired(originalRequest: any) {
     let password = null;
 
     if (Platform.OS !== 'web') {
-      username = await SecureStore.getItemAsync('nim');
-      // Prioritaskan password eletter khusus jika ada, jika tidak fallback ke password utama
-      password =
-        (await SecureStore.getItemAsync('eletter_password')) ||
-        (await SecureStore.getItemAsync('password'));
+      username = await SecureStore.getItemAsync('eletter_username');
+      password = await SecureStore.getItemAsync('eletter_password');
     }
 
     if (!username || !password) throw new Error('Kredensial E-Letter kosong. Silakan login ulang.');

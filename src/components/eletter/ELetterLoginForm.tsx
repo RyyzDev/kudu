@@ -51,10 +51,10 @@ export function ELetterLoginForm({
 
         <View className="gap-4">
           <View>
-            <Text className="font-bold text-black mb-2 uppercase text-xs">NIM</Text>
+            <Text className="font-bold text-black mb-2 uppercase text-xs">Username / NIM / NIK</Text>
             <TextInput
               className="bg-white border-2 border-black rounded-xl px-4 py-3 font-bold text-black border-b-[4px] border-r-[4px]"
-              placeholder="Masukkan Username"
+              placeholder="Masukkan Username / NIM / NIK"
               placeholderTextColor="#999"
               value={username}
               onChangeText={onUsernameChange}

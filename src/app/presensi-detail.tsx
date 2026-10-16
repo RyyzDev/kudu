@@ -16,7 +16,9 @@ export default function PresensiDetailScreen() {
   const fetchDetail = async () => {
     try {
       if (!url) throw new Error('URL kelas tidak valid.');
-      const phpSessId = await SecureStore.getItemAsync('phpSessId');
+      const phpSessId =
+        (await SecureStore.getItemAsync('akademik_phpSessId')) ||
+        (await SecureStore.getItemAsync('phpSessId'));
       if (!phpSessId) throw new Error('Sesi tidak ditemukan.');
 
       const decodedUrl = decodeURIComponent(url);
@@ -39,7 +41,9 @@ export default function PresensiDetailScreen() {
     setSelectedPrs(null);
     try {
       setSubmitting(true);
-      const phpSessId = await SecureStore.getItemAsync('phpSessId');
+      const phpSessId =
+        (await SecureStore.getItemAsync('akademik_phpSessId')) ||
+        (await SecureStore.getItemAsync('phpSessId'));
       if (!phpSessId) throw new Error('Sesi tidak ditemukan.');
 
       const decodedUrl = decodeURIComponent(url);

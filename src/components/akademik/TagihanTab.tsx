@@ -14,7 +14,9 @@ export function TagihanContent() {
   useEffect(() => {
     (async () => {
       try {
-        const phpSessId = await SecureStore.getItemAsync('phpSessId');
+        const phpSessId =
+          (await SecureStore.getItemAsync('akademik_phpSessId')) ||
+          (await SecureStore.getItemAsync('phpSessId'));
         if (!phpSessId) throw new Error('Sesi tidak ditemukan.');
 
         const sems = await getTagihanSemesters();
@@ -37,7 +39,9 @@ export function TagihanContent() {
     (async () => {
       setFetchingData(true);
       try {
-        const phpSessId = await SecureStore.getItemAsync('phpSessId');
+        const phpSessId =
+          (await SecureStore.getItemAsync('akademik_phpSessId')) ||
+          (await SecureStore.getItemAsync('phpSessId'));
         if (!phpSessId) throw new Error('Sesi tidak ditemukan.');
 
         const data = await getTagihanData(activeSemester);

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, ActivityIndicator, SafeAreaView, Alert, Text, Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
-import { loginELetter, checkELetterSession } from '../services/eletter/eletterAuthService';
+import { loginELetter, checkELetterSession, clearEletterCookies } from '../services/eletter/eletterAuthService';
 import { getELetterDashboard, getELetterFormAdd, ELetterSurat, ELetterDropdownOption } from '../services/eletter/eletterService';
 import { eletterApi } from '../services/eletter/eletterApi';
 import { ELETTER_URL } from '../services/eletter/eletterAuthService';
@@ -43,17 +43,16 @@ export default function ELetterScreen() {
         return;
       }
 
-      let storedNim = null;
+      let storedUsername = null;
       let storedPwd = null;
       if (Platform.OS !== 'web') {
-        storedNim = await SecureStore.getItemAsync('nim');
-        storedPwd =
-          (await SecureStore.getItemAsync('eletter_password')) ||
-          (await SecureStore.getItemAsync('password'));
+        storedUsername = await SecureStore.getItemAsync('eletter_username');
+        storedPwd = await SecureStore.getItemAsync('eletter_password');
+        if (storedUsername) setUsername(storedUsername);
       }
 
-      if (storedNim && storedPwd) {
-        const success = await loginELetter(storedNim, storedPwd);
+      if (storedUsername && storedPwd) {
+        const success = await loginELetter(storedUsername, storedPwd);
         if (success) {
           setIsLoggedIn(true);
           loadDashboard();
@@ -76,7 +75,7 @@ export default function ELetterScreen() {
       const success = await loginELetter(username, password);
       if (success) {
         if (Platform.OS !== 'web') {
-          await SecureStore.setItemAsync('nim', username);
+          await SecureStore.setItemAsync('eletter_username', username);
           await SecureStore.setItemAsync('eletter_password', password);
         }
         setIsLoggedIn(true);
@@ -142,6 +141,16 @@ export default function ELetterScreen() {
     }
   };
 
+  const handleLogout = async () => {
+    clearEletterCookies();
+    if (Platform.OS !== 'web') {
+      await SecureStore.deleteItemAsync('eletter_username');
+      await SecureStore.deleteItemAsync('eletter_password');
+    }
+    setIsLoggedIn(false);
+    setPassword('');
+  };
+
   if (loading) {
     return (
       <SafeAreaView className="flex-1 bg-[#f4f4f0] items-center justify-center">
@@ -166,6 +175,7 @@ export default function ELetterScreen() {
         onSelectSurat={setSelectedSurat}
         onSetTipe={setTipePengajuan}
         onSubmit={submitPengajuan}
+        onLogout={handleLogout}
       />
     );
   }

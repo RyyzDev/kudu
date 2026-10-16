@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -22,14 +22,16 @@ import {
 } from '../services/lms/lmsParser';
 import { LmsCourse, LmsAssignment, LmsUser } from '../services/lms/lmsTypes';
 import { LmsAuthModal } from '../components/lms/LmsAuthModal';
-import { LmsBackgroundSyncer } from '../components/lms/LmsBackgroundSyncer';
+import { LmsBackgroundSyncer, LmsBackgroundSyncerRef } from '../components/lms/LmsBackgroundSyncer';
+import { LmsCourseSearchTab } from '../components/lms/LmsCourseSearchTab';
 
 export default function LmsScreen() {
   const router = useRouter();
+  const syncerRef = useRef<LmsBackgroundSyncerRef>(null);
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'assignments' | 'courses'>('assignments');
+  const [activeTab, setActiveTab] = useState<'assignments' | 'courses' | 'search'>('assignments');
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [syncKey, setSyncKey] = useState(0);
 
@@ -109,10 +111,11 @@ export default function LmsScreen() {
   const sortedAssignments = [...assignments].sort((a, b) => a.timesort - b.timesort);
 
   return (
-    <SafeAreaView className="flex-1 bg-[#f4f4f0]">
+    <SafeAreaView className="flex-1 bg-[#f4f4f0]" style={{ flex: 1, backgroundColor: '#f4f4f0' }}>
       {/* Background Syncer */}
       {isConnected && (
         <LmsBackgroundSyncer
+          ref={syncerRef}
           syncKey={syncKey}
           onSyncSuccess={() => {
             setSessionExpired(false);
@@ -254,42 +257,55 @@ export default function LmsScreen() {
         </View>
       )}
 
-      {/* Tab Navigation Neobrutalism */}
-      <View className="px-5 flex-row gap-3 mb-3">
+      {/* Tab Navigation Neobrutalism (3 Tabs) */}
+      <View className="px-4 flex-row gap-2 mb-3">
         <TouchableOpacity
           onPress={() => setActiveTab('assignments')}
-          className={`flex-1 py-2.5 px-3 rounded-xl border-2 border-black flex-row items-center justify-center gap-2 ${
+          className={`flex-1 py-2 px-2 rounded-xl border-2 border-black flex-row items-center justify-center gap-1.5 ${
             activeTab === 'assignments'
-              ? 'bg-[#ffde59] border-b-[5px] border-r-[5px]'
-              : 'bg-white border-b-2 border-r-2 opacity-70'
+              ? 'bg-[#ffde59] border-b-[4px] border-r-[4px]'
+              : 'bg-white border-b-2 border-r-2 opacity-75'
           }`}
           activeOpacity={0.8}
         >
-          <Feather name="check-square" size={16} color="black" />
-          <Text className="font-black text-black uppercase text-xs">Tugas & Deadline</Text>
+          <Feather name="check-square" size={14} color="black" />
+          <Text className="font-black text-black uppercase text-[11px]">Tugas</Text>
           {assignments.length > 0 && (
             <View className="bg-black px-1.5 py-0.2 rounded-full">
-              <Text className="text-white text-[10px] font-black">{assignments.length}</Text>
+              <Text className="text-white text-[9px] font-black">{assignments.length}</Text>
             </View>
           )}
         </TouchableOpacity>
 
         <TouchableOpacity
           onPress={() => setActiveTab('courses')}
-          className={`flex-1 py-2.5 px-3 rounded-xl border-2 border-black flex-row items-center justify-center gap-2 ${
+          className={`flex-1 py-2 px-2 rounded-xl border-2 border-black flex-row items-center justify-center gap-1.5 ${
             activeTab === 'courses'
-              ? 'bg-[#70d6ff] border-b-[5px] border-r-[5px]'
-              : 'bg-white border-b-2 border-r-2 opacity-70'
+              ? 'bg-[#70d6ff] border-b-[4px] border-r-[4px]'
+              : 'bg-white border-b-2 border-r-2 opacity-75'
           }`}
           activeOpacity={0.8}
         >
-          <Feather name="book-open" size={16} color="black" />
-          <Text className="font-black text-black uppercase text-xs">Mata Kuliah</Text>
+          <Feather name="book-open" size={14} color="black" />
+          <Text className="font-black text-black uppercase text-[11px]">Terdaftar</Text>
           {courses.length > 0 && (
             <View className="bg-black px-1.5 py-0.2 rounded-full">
-              <Text className="text-white text-[10px] font-black">{courses.length}</Text>
+              <Text className="text-white text-[9px] font-black">{courses.length}</Text>
             </View>
           )}
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={() => setActiveTab('search')}
+          className={`flex-1 py-2 px-2 rounded-xl border-2 border-black flex-row items-center justify-center gap-1.5 ${
+            activeTab === 'search'
+              ? 'bg-[#c1ff72] border-b-[4px] border-r-[4px]'
+              : 'bg-white border-b-2 border-r-2 opacity-75'
+          }`}
+          activeOpacity={0.8}
+        >
+          <Feather name="search" size={14} color="black" />
+          <Text className="font-black text-black uppercase text-[11px]">Cari Kursus</Text>
         </TouchableOpacity>
       </View>
 
@@ -385,7 +401,7 @@ export default function LmsScreen() {
             </View>
           }
         />
-      ) : (
+      ) : activeTab === 'courses' ? (
         <FlatList
           data={courses}
           keyExtractor={item => String(item.id)}
@@ -461,6 +477,13 @@ export default function LmsScreen() {
               </Text>
             </View>
           }
+        />
+      ) : (
+        <LmsCourseSearchTab
+          isConnected={isConnected}
+          onRequestConnect={() => setShowAuthModal(true)}
+          syncerRef={syncerRef}
+          openUrl={openUrl}
         />
       )}
 

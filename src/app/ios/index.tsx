@@ -42,8 +42,10 @@ export default function HomeScreen() {
   const router = useRouter();
 
   const handleAkademikPress = async () => {
-    const nim = await SecureStore.getItemAsync('nim');
-    const phpSessId = await SecureStore.getItemAsync('phpSessId');
+    const nim =
+      (await SecureStore.getItemAsync('akademik_nim')) || (await SecureStore.getItemAsync('nim'));
+    const phpSessId =
+      (await SecureStore.getItemAsync('akademik_phpSessId')) || (await SecureStore.getItemAsync('phpSessId'));
 
     if (nim && phpSessId) {
       router.push('/akademik' as any);

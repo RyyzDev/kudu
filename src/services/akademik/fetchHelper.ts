@@ -50,16 +50,23 @@ export async function fetchWithManualRedirects(
     loopCount++;
     console.log(`\n[FETCH-TRACE ${loopCount}] GET ${currentUrl.split('?')[0]}...`);
 
+    const reqHeaders: Record<string, string> = { ...baseHeaders };
+    if (currentCookies && currentCookies !== 'NATIVE_MANAGED') {
+      reqHeaders['Cookie'] = currentCookies;
+    } else {
+      delete reqHeaders['Cookie'];
+    }
+
     res = await fetch(currentUrl, {
       method: 'GET',
-      headers: { ...baseHeaders, Cookie: currentCookies },
-      redirect: 'manual', // Wajib manual untuk kumpulkan cookie
+      headers: reqHeaders,
+      redirect: 'manual', // Usahakan manual untuk kumpulkan cookie
     });
 
     console.log(`[FETCH-TRACE ${loopCount}] Status: ${res.status}`);
     const newCookies = extractSetCookies(res.headers);
     currentCookies = updateCookies(currentCookies, newCookies);
-    console.log(`[FETCH-TRACE ${loopCount}] Cookies:`, currentCookies || '(kosong)');
+    console.log(`[FETCH-TRACE ${loopCount}] Cookies:`, currentCookies || '(managed by OS)');
 
     const isRedirect = [301, 302, 303, 307, 308].includes(res.status);
     if (isRedirect) {
@@ -81,7 +88,9 @@ export async function fetchWithManualRedirects(
     }
 
     // Jika 200 atau status lain, berhenti dan kembalikan respon
-    return { res, currentUrl, currentCookies };
+    // Gunakan res.url jika native OkHttpClient melakukan auto-follow redirect
+    const finalUrl = res.url || currentUrl;
+    return { res, currentUrl: finalUrl, currentCookies };
   }
 
   throw new Error(`Terlalu banyak redirect (> ${maxRedirects})`);
