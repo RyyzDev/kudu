@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, Alert, RefreshControl } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
@@ -8,23 +8,30 @@ import { getDataPresensi, PresensiItem } from '../../services/akademik/presensiS
 export function PresensiContent() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [presensiList, setPresensiList] = useState<PresensiItem[]>([]);
 
+  const fetchPresensi = async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
+
+    try {
+      const phpSessId =
+        (await SecureStore.getItemAsync('akademik_phpSessId')) ||
+        (await SecureStore.getItemAsync('phpSessId'));
+      if (!phpSessId) throw new Error('Sesi tidak ditemukan.');
+      const data = await getDataPresensi(isRefresh);
+      setPresensiList(data);
+    } catch (e: any) {
+      Alert.alert('Gagal', e.message);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
   useEffect(() => {
-    (async () => {
-      try {
-        const phpSessId =
-          (await SecureStore.getItemAsync('akademik_phpSessId')) ||
-          (await SecureStore.getItemAsync('phpSessId'));
-        if (!phpSessId) throw new Error('Sesi tidak ditemukan.');
-        const data = await getDataPresensi();
-        setPresensiList(data);
-      } catch (e: any) {
-        Alert.alert('Gagal', e.message);
-      } finally {
-        setLoading(false);
-      }
-    })();
+    fetchPresensi();
   }, []);
 
   if (loading) {
@@ -41,6 +48,14 @@ export function PresensiContent() {
       data={presensiList}
       keyExtractor={item => item.matakuliah + item.kelas}
       contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 40 }}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={() => fetchPresensi(true)}
+          tintColor="#ff914d"
+          colors={['#ff914d', '#1a1a2e']}
+        />
+      }
       renderItem={({ item }) => {
         const persentase = item.terlaksana === 0 ? 0 : Math.round((item.hadir / item.terlaksana) * 100);
         return (

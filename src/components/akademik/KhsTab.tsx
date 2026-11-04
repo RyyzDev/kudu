@@ -1,16 +1,35 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, FlatList, ScrollView, TouchableOpacity, ActivityIndicator, Alert, RefreshControl } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { Feather } from '@expo/vector-icons';
 import { getKhsSemesters, getKhsData, SemesterOption, KhsItem, KhsSummary } from '../../services/akademik/khsService';
 
 export function KhsContent() {
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [fetchingData, setFetchingData] = useState(false);
   const [semesters, setSemesters] = useState<SemesterOption[]>([]);
   const [activeSemester, setActiveSemester] = useState<string>('');
   const [khsData, setKhsData] = useState<KhsItem[]>([]);
   const [summary, setSummary] = useState<KhsSummary | null>(null);
+
+  const fetchKhsDataForSemester = async (semesterId: string, force = false) => {
+    if (!force) setFetchingData(true);
+    try {
+      const phpSessId =
+        (await SecureStore.getItemAsync('akademik_phpSessId')) ||
+        (await SecureStore.getItemAsync('phpSessId'));
+      if (!phpSessId) throw new Error('Sesi tidak ditemukan.');
+
+      const result = await getKhsData(semesterId, force);
+      setKhsData(result.items);
+      setSummary(result.summary);
+    } catch (e: any) {
+      Alert.alert('Gagal', e.message);
+    } finally {
+      if (!force) setFetchingData(false);
+    }
+  };
 
   useEffect(() => {
     (async () => {
@@ -36,25 +55,26 @@ export function KhsContent() {
 
   useEffect(() => {
     if (!activeSemester) return;
+    fetchKhsDataForSemester(activeSemester, false);
+  }, [activeSemester]);
 
-    (async () => {
-      setFetchingData(true);
-      try {
-        const phpSessId =
-          (await SecureStore.getItemAsync('akademik_phpSessId')) ||
-          (await SecureStore.getItemAsync('phpSessId'));
-        if (!phpSessId) throw new Error('Sesi tidak ditemukan.');
-
-        const result = await getKhsData(activeSemester);
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      const sems = await getKhsSemesters(true);
+      setSemesters(sems);
+      const targetSem = activeSemester || (sems.length > 0 ? sems[0].value : '');
+      if (targetSem) {
+        const result = await getKhsData(targetSem, true);
         setKhsData(result.items);
         setSummary(result.summary);
-      } catch (e: any) {
-        Alert.alert('Gagal', e.message);
-      } finally {
-        setFetchingData(false);
       }
-    })();
-  }, [activeSemester]);
+    } catch (e: any) {
+      Alert.alert('Gagal', e.message);
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -90,7 +110,7 @@ export function KhsContent() {
       </View>
 
       {/* Daftar Nilai */}
-      {fetchingData ? (
+      {fetchingData && !refreshing ? (
         <View className="flex-1 items-center justify-center py-20">
           <ActivityIndicator size="large" color="#1a1a2e" />
         </View>
@@ -99,6 +119,14 @@ export function KhsContent() {
           data={khsData}
           keyExtractor={item => item.kode + item.kelas}
           contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 40 }}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor="#ff914d"
+              colors={['#ff914d', '#1a1a2e']}
+            />
+          }
           ListHeaderComponent={
             <View className="mb-4 gap-3">
               {summary && (

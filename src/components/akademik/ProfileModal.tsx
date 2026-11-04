@@ -32,7 +32,7 @@ export function ProfileModal({ visible, onClose }: ProfileModalProps) {
     setErrorMessage(null);
 
     try {
-      const data = await getProfileData();
+      const data = await getProfileData(isPullRefresh);
       setProfileData(data);
     } catch (err: any) {
       console.error('[PROFILE] Error fetching profile:', err);
@@ -105,7 +105,12 @@ export function ProfileModal({ visible, onClose }: ProfileModalProps) {
             className="flex-1 px-4 pt-4"
             contentContainerStyle={{ paddingBottom: 40 }}
             refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={() => fetchProfile(true)} colors={['#000']} />
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={() => fetchProfile(true)}
+                tintColor="#ff914d"
+                colors={['#ff914d', '#1a1a2e']}
+              />
             }
           >
             {/* Card Hero: Avatar & Nama Mahasiswa */}

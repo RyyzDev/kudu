@@ -1,32 +1,39 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, FlatList, ActivityIndicator, Alert, RefreshControl } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { Feather } from '@expo/vector-icons';
 import { getDataKRS, StudentProfile, KrsItem } from '../../services/akademik/krsService';
 
 export function KrsContent() {
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [profile, setProfile] = useState<StudentProfile | null>(null);
   const [krsList, setKrsList] = useState<KrsItem[]>([]);
   const [totalSks, setTotalSks] = useState(0);
 
+  const fetchKrs = async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
+
+    try {
+      const phpSessId =
+        (await SecureStore.getItemAsync('akademik_phpSessId')) ||
+        (await SecureStore.getItemAsync('phpSessId'));
+      if (!phpSessId) throw new Error('Sesi tidak ditemukan.');
+      const data = await getDataKRS(isRefresh);
+      setProfile(data.studentProfile);
+      setKrsList(data.krsList);
+      setTotalSks(data.totalSks);
+    } catch (e: any) {
+      Alert.alert('Gagal', e.message);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
   useEffect(() => {
-    (async () => {
-      try {
-        const phpSessId =
-          (await SecureStore.getItemAsync('akademik_phpSessId')) ||
-          (await SecureStore.getItemAsync('phpSessId'));
-        if (!phpSessId) throw new Error('Sesi tidak ditemukan.');
-        const data = await getDataKRS();
-        setProfile(data.studentProfile);
-        setKrsList(data.krsList);
-        setTotalSks(data.totalSks);
-      } catch (e: any) {
-        Alert.alert('Gagal', e.message);
-      } finally {
-        setLoading(false);
-      }
-    })();
+    fetchKrs();
   }, []);
 
   if (loading) {
@@ -43,6 +50,14 @@ export function KrsContent() {
       data={krsList}
       keyExtractor={item => item.kodeMk + item.kelas}
       contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 40 }}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={() => fetchKrs(true)}
+          tintColor="#ff914d"
+          colors={['#ff914d', '#1a1a2e']}
+        />
+      }
       ListHeaderComponent={
         profile ? (
           <View className="rounded-xl border-2 border-black bg-[#1a1a2e] border-b-[6px] border-r-[6px] p-4 mb-4">

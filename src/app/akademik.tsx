@@ -10,6 +10,7 @@ import { KhsContent } from '../components/akademik/KhsTab';
 import { TagihanContent } from '../components/akademik/TagihanTab';
 import { ComingSoon } from '../components/akademik/ComingSoon';
 import { ProfileModal } from '../components/akademik/ProfileModal';
+import { clearAcademicCache } from '../services/akademik/academicCache';
 
 export default function AkademikScreen() {
   const router = useRouter();
@@ -27,6 +28,7 @@ export default function AkademikScreen() {
   };
 
   const handleLogout = async () => {
+    clearAcademicCache();
     await SecureStore.deleteItemAsync('akademik_nim');
     await SecureStore.deleteItemAsync('akademik_password');
     await SecureStore.deleteItemAsync('akademik_phpSessId');

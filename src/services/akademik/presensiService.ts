@@ -1,6 +1,7 @@
 import { academicApi } from './academicApi';
 import { HTTP_CONFIG } from './httpConfig';
 import { parsePresensiHtml, parseDetailPresensiHtml } from './presensiParser';
+import { fetchWithAcademicCache, removeAcademicCache } from './academicCache';
 
 // Re-exportir tipe data untuk backward-compatibility dengan importers
 export type { PresensiItem, PertemuanItem } from './presensiParser';
@@ -12,15 +13,21 @@ const POST_PRESENSI_URL = `${HTTP_CONFIG.AKADEMIK_ORIGIN_URL}/index.php?pModule=
 // ACADEMIC SCRAPING (PRESENSI MODULE)
 // ==========================================
 
-export async function getDataPresensi() {
-  console.log('\n[PRESENSI PIPELINE] Mengambil data presensi...');
-  const res = await academicApi.get(PRESENSI_URL);
+export async function getDataPresensi(forceRefresh: boolean = false) {
+  return fetchWithAcademicCache(
+    'akademik_presensi',
+    async () => {
+      console.log('\n[PRESENSI PIPELINE] Mengambil data presensi...');
+      const res = await academicApi.get(PRESENSI_URL);
 
-  if (typeof res.data === 'string' && (res.data.includes('kc-form-login') || res.data.includes('Anda tidak diijinkan'))) {
-    throw new Error('SESSION_EXPIRED_AFTER_RETRY');
-  }
+      if (typeof res.data === 'string' && (res.data.includes('kc-form-login') || res.data.includes('Anda tidak diijinkan'))) {
+        throw new Error('SESSION_EXPIRED_AFTER_RETRY');
+      }
 
-  return parsePresensiHtml(res.data);
+      return parsePresensiHtml(res.data);
+    },
+    { forceRefresh }
+  );
 }
 
 // ==========================================
@@ -78,5 +85,6 @@ export async function submitPresensi(
 
   // Cek apakah ada indikator gagal. Normalnya ia akan di-redirect (302) kembali ke halaman detail
   // Axios akan mengikuti redirect dan mengembalikan HTML halaman detail dengan tombol sudah disabled
+  removeAcademicCache('akademik_presensi');
   return true;
 }
